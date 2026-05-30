@@ -1,0 +1,59 @@
+name: Fetch MAL Data
+
+on:
+  schedule:
+    - cron: '0 * * * *'  # every hour
+  workflow_dispatch:      # allow manual trigger
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Fetch MAL anime list
+        env:
+          MAL_CLIENT_ID: ${{ secrets.MAL_CLIENT_ID }}
+          MAL_USERNAME: NerdIdeias
+        run: |
+          fetch_status() {
+            STATUS=$1
+            OFFSET=0
+            ALL="[]"
+            while true; do
+              RESPONSE=$(curl -s -H "X-MAL-CLIENT-ID: $MAL_CLIENT_ID" \
+                "https://api.myanimelist.net/v2/users/$MAL_USERNAME/animelist?status=$STATUS&limit=100&offset=$OFFSET&fields=list_status,num_episodes,main_picture")
+              DATA=$(echo $RESPONSE | python3 -c "import sys,json; d=json.load(sys.stdin); print(json.dumps(d.get('data',[])))")
+              ALL=$(python3 -c "import sys,json; a=json.loads('$ALL'); b=json.loads(sys.argv[1]); print(json.dumps(a+b))" "$DATA")
+              HAS_NEXT=$(echo $RESPONSE | python3 -c "import sys,json; d=json.load(sys.stdin); print('yes' if d.get('paging',{}).get('next') else 'no')")
+              if [ "$HAS_NEXT" = "no" ]; then break; fi
+              OFFSET=$((OFFSET + 100))
+            done
+            echo $ALL
+          }
+
+          WATCHING=$(fetch_status "watching")
+          COMPLETED=$(fetch_status "completed")
+          PLAN=$(fetch_status "plan_to_watch")
+
+          python3 -c "
+          import json
+          data = {
+            'watching': json.loads('''$WATCHING'''),
+            'completed': json.loads('''$COMPLETED'''),
+            'plan': json.loads('''$PLAN''')
+          }
+          with open('anime-data.json', 'w') as f:
+            json.dump(data, f)
+          print('Saved anime-data.json')
+          "
+
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add anime-data.json
+          git diff --staged --quiet || git commit -m "Update anime data"
+          git push

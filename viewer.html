@@ -9,7 +9,6 @@
     body { font-family: Arial, sans-serif; background: #0e0e10; color: #efeff1; font-size: 13px; }
     .panel { padding: 12px; }
     .header { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
-    .header-icon { font-size: 20px; }
     .header-title { font-size: 15px; font-weight: 600; }
     .header-sub { font-size: 11px; color: #adadb8; }
     .tabs { display: flex; gap: 2px; margin-bottom: 10px; border-bottom: 1px solid #2a2a2e; }
@@ -41,7 +40,7 @@
 <body>
 <div class="panel">
   <div class="header">
-    <span class="header-icon">&#128250;</span>
+    <span style="font-size:20px">&#128250;</span>
     <div>
       <div class="header-title">Anime List</div>
       <div class="header-sub" id="username-display">Loading...</div>
@@ -49,15 +48,9 @@
   </div>
 
   <div class="tabs">
-    <button class="tab active" onclick="switchTab('watching')" id="tab-watching">
-      Watching <span class="count" id="count-watching">0</span>
-    </button>
-    <button class="tab" onclick="switchTab('completed')" id="tab-completed">
-      Completed <span class="count" id="count-completed">0</span>
-    </button>
-    <button class="tab" onclick="switchTab('plan')" id="tab-plan">
-      Plan to watch <span class="count" id="count-plan">0</span>
-    </button>
+    <button class="tab active" id="tab-watching">Watching <span class="count" id="count-watching">0</span></button>
+    <button class="tab" id="tab-completed">Completed <span class="count" id="count-completed">0</span></button>
+    <button class="tab" id="tab-plan">Plan to watch <span class="count" id="count-plan">0</span></button>
   </div>
 
   <div id="list-container">

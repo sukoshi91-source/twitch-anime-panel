@@ -4,12 +4,12 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Anime List</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: Arial, sans-serif; background: #0e0e10; color: #efeff1; font-size: 13px; }
     .panel { padding: 12px; }
     .header { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+    .header-icon { font-size: 20px; }
     .header-title { font-size: 15px; font-weight: 600; }
     .header-sub { font-size: 11px; color: #adadb8; }
     .tabs { display: flex; gap: 2px; margin-bottom: 10px; border-bottom: 1px solid #2a2a2e; }
@@ -20,7 +20,7 @@
     .list { display: flex; flex-direction: column; gap: 6px; }
     .card { display: flex; gap: 8px; padding: 8px; border-radius: 6px; background: #18181b; border: 1px solid #2a2a2e; }
     .cover { width: 40px; height: 57px; border-radius: 3px; object-fit: cover; flex-shrink: 0; background: #2a2a2e; }
-    .cover-placeholder { width: 40px; height: 57px; border-radius: 3px; flex-shrink: 0; background: #2a2a2e; display: flex; align-items: center; justify-content: center; color: #555; }
+    .cover-placeholder { width: 40px; height: 57px; border-radius: 3px; flex-shrink: 0; background: #2a2a2e; display: flex; align-items: center; justify-content: center; color: #555; font-size: 18px; }
     .info { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: space-between; }
     .title { font-size: 12px; font-weight: 600; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
     .meta { display: flex; align-items: center; gap: 6px; margin-top: 4px; color: #adadb8; font-size: 11px; }
@@ -29,7 +29,7 @@
     .progress-bar { height: 3px; background: #2a2a2e; border-radius: 2px; margin-top: 5px; overflow: hidden; }
     .progress-fill { height: 100%; background: #9147ff; border-radius: 2px; }
     .empty { text-align: center; padding: 30px 16px; color: #adadb8; }
-    .empty i { font-size: 28px; display: block; margin-bottom: 8px; opacity: 0.4; }
+    .empty-icon { font-size: 28px; display: block; margin-bottom: 8px; opacity: 0.4; }
     .loading { text-align: center; padding: 30px 16px; color: #adadb8; }
     .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid #2a2a2e; border-top-color: #9147ff; border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle; margin-right: 6px; }
     @keyframes spin { to { transform: rotate(360deg); } }
@@ -41,7 +41,7 @@
 <body>
 <div class="panel">
   <div class="header">
-    <i class="ti ti-device-tv" style="font-size:20px;color:#9147ff"></i>
+    <span class="header-icon">📺</span>
     <div>
       <div class="header-title">Anime List</div>
       <div class="header-sub" id="username-display">Loading...</div>
@@ -89,7 +89,7 @@
     var items = allData[currentTab];
     if (!items || items.length === 0) {
       var labels = { watching: 'currently watching', completed: 'completed', plan: 'planning to watch' };
-      container.innerHTML = '<div class="empty"><i class="ti ti-mood-empty"></i>Nothing ' + labels[currentTab] + ' yet.</div>';
+      container.innerHTML = '<div class="empty"><span class="empty-icon">🌸</span>Nothing ' + labels[currentTab] + ' yet.</div>';
       return;
     }
     var html = '<div class="list">';
@@ -106,13 +106,13 @@
       if (img) {
         html += '<img class="cover" src="' + img + '" alt="" loading="lazy">';
       } else {
-        html += '<div class="cover-placeholder"><i class="ti ti-photo" style="font-size:16px"></i></div>';
+        html += '<div class="cover-placeholder">🎌</div>';
       }
       html += '<div class="info">';
       html += '<div class="title">' + node.title + '</div>';
       html += '<div class="meta">';
       if (score && score > 0) {
-        html += '<span class="score"><i class="ti ti-star-filled" style="font-size:11px"></i> ' + score.toFixed(1) + '</span>';
+        html += '<span class="score">&#9733; ' + score.toFixed(1) + '</span>';
       } else {
         html += '<span style="color:#555">Not rated</span>';
       }
@@ -171,7 +171,7 @@
       document.getElementById('count-plan').textContent = plan.length;
       renderList();
     } catch(e) {
-      document.getElementById('list-container').innerHTML = '<div class="error"><i class="ti ti-alert-circle" style="vertical-align:-2px;margin-right:4px"></i>' + e.message + '</div>';
+      document.getElementById('list-container').innerHTML = '<div class="error">&#9888; ' + e.message + '</div>';
       document.getElementById('count-watching').textContent = '0';
       document.getElementById('count-completed').textContent = '0';
       document.getElementById('count-plan').textContent = '0';

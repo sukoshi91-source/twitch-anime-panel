@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Anime List – Config</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Arial, sans-serif; background: #0e0e10; color: #efeff1; font-size: 13px; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+    .card { background: #18181b; border: 1px solid #2a2a2e; border-radius: 8px; padding: 24px; width: 320px; }
+    h1 { font-size: 16px; font-weight: 600; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
+    .sub { font-size: 12px; color: #adadb8; margin-bottom: 20px; }
+    label { font-size: 12px; color: #adadb8; display: block; margin-bottom: 6px; }
+    input { width: 100%; padding: 8px 10px; background: #0e0e10; border: 1px solid #2a2a2e; border-radius: 6px; color: #efeff1; font-size: 13px; outline: none; }
+    input:focus { border-color: #9147ff; }
+    .btn { width: 100%; margin-top: 14px; padding: 9px; background: #9147ff; color: #fff; border: none; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; }
+    .btn:hover { background: #772ce8; }
+    .btn:disabled { background: #444; cursor: not-allowed; }
+    .status { margin-top: 12px; font-size: 12px; text-align: center; min-height: 18px; }
+    .status.ok { color: #00c853; }
+    .status.err { color: #ff6b6b; }
+    .preview { margin-top: 16px; padding: 10px; background: #0e0e10; border-radius: 6px; border: 1px solid #2a2a2e; font-size: 12px; color: #adadb8; display: none; }
+    .preview strong { color: #efeff1; }
+  </style>
+</head>
+<body>
+<div class="card">
+  <h1><i class="ti ti-device-tv" style="color:#9147ff;font-size:20px"></i> Anime List Setup</h1>
+  <p class="sub">Enter your MyAnimeList username to show your list to viewers.</p>
+
+  <label for="mal-input">MyAnimeList username</label>
+  <input type="text" id="mal-input" placeholder="e.g. Naruto123" autocomplete="off" />
+
+  <button class="btn" id="save-btn" onclick="saveConfig()">Save</button>
+
+  <div class="status" id="status"></div>
+
+  <div class="preview" id="preview">
+    Profile found: <strong id="preview-name"></strong><br>
+    <span id="preview-counts"></span>
+  </div>
+</div>
+
+<script src="https://extension-files.twitch.tv/helper/v1/twitch-ext.min.js"></script>
+<script>
+  // Pre-fill if already configured
+  window.Twitch.ext.configuration.onChanged(() => {
+    const cfg = window.Twitch.ext.configuration.broadcaster;
+    if (cfg && cfg.content) {
+      try {
+        const { malUsername } = JSON.parse(cfg.content);
+        if (malUsername) document.getElementById('mal-input').value = malUsername;
+      } catch (e) {}
+    }
+  });
+
+  async function saveConfig() {
+    const username = document.getElementById('mal-input').value.trim();
+    const btn = document.getElementById('save-btn');
+    const status = document.getElementById('status');
+    const preview = document.getElementById('preview');
+
+    if (!username) {
+      status.textContent = 'Please enter a username.';
+      status.className = 'status err';
+      return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = 'Verifying…';
+    status.textContent = '';
+    preview.style.display = 'none';
+
+    try {
+      // Verify the user exists on MAL
+      const res = await fetch(`https://api.jikan.moe/v4/users/${encodeURIComponent(username)}/statistics`);
+      if (!res.ok) throw new Error(res.status === 404 ? 'User not found on MyAnimeList.' : 'Could not reach MAL API.');
+      const data = await res.json();
+      const anime = data.data && data.data.anime;
+
+      // Save to Twitch config service
+      window.Twitch.ext.configuration.set('broadcaster', '1', JSON.stringify({ malUsername: username }));
+
+      status.textContent = '✓ Saved! Viewers will now see your anime list.';
+      status.className = 'status ok';
+
+      if (anime) {
+        document.getElementById('preview-name').textContent = username;
+        document.getElementById('preview-counts').textContent =
+          `Watching: ${anime.watching} · Completed: ${anime.completed} · Plan to watch: ${anime.plan_to_watch}`;
+        preview.style.display = 'block';
+      }
+    } catch (e) {
+      status.textContent = e.message;
+      status.className = 'status err';
+    }
+
+    btn.disabled = false;
+    btn.textContent = 'Save';
+  }
+
+  document.getElementById('mal-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') saveConfig();
+  });
+</script>
+</body>
+</html>

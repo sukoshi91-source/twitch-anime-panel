@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Anime List</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Arial, sans-serif; background: #0e0e10; color: #efeff1; font-size: 13px; }
+    .panel { padding: 12px; }
+    .header { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+    .header-title { font-size: 15px; font-weight: 600; }
+    .header-sub { font-size: 11px; color: #adadb8; }
+    .tabs { display: flex; gap: 2px; margin-bottom: 10px; border-bottom: 1px solid #2a2a2e; }
+    .tab { flex: 1; font-size: 11px; padding: 6px 4px; cursor: pointer; border: none; background: none; color: #adadb8; border-bottom: 2px solid transparent; margin-bottom: -1px; }
+    .tab.active { color: #efeff1; border-bottom: 2px solid #9147ff; font-weight: 600; }
+    .tab:hover:not(.active) { color: #efeff1; }
+    .count { font-size: 10px; background: #2a2a2e; border-radius: 10px; padding: 1px 5px; margin-left: 3px; }
+    .list { display: flex; flex-direction: column; gap: 6px; }
+    .card { display: flex; gap: 8px; padding: 8px; border-radius: 6px; background: #18181b; border: 1px solid #2a2a2e; }
+    .cover { width: 40px; height: 57px; border-radius: 3px; object-fit: cover; flex-shrink: 0; background: #2a2a2e; }
+    .cover-placeholder { width: 40px; height: 57px; border-radius: 3px; flex-shrink: 0; background: #2a2a2e; display: flex; align-items: center; justify-content: center; color: #555; }
+    .info { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: space-between; }
+    .title { font-size: 12px; font-weight: 600; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .meta { display: flex; align-items: center; gap: 6px; margin-top: 4px; color: #adadb8; font-size: 11px; }
+    .score { display: flex; align-items: center; gap: 3px; color: #f5a623; }
+    .eps { margin-left: auto; }
+    .progress-bar { height: 3px; background: #2a2a2e; border-radius: 2px; margin-top: 5px; overflow: hidden; }
+    .progress-fill { height: 100%; background: #9147ff; border-radius: 2px; }
+    .empty { text-align: center; padding: 30px 16px; color: #adadb8; }
+    .empty i { font-size: 28px; display: block; margin-bottom: 8px; opacity: 0.4; }
+    .loading { text-align: center; padding: 30px 16px; color: #adadb8; }
+    .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid #2a2a2e; border-top-color: #9147ff; border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle; margin-right: 6px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .error { text-align: center; padding: 16px; color: #ff6b6b; background: #1e1014; border-radius: 6px; font-size: 12px; }
+    .footer { margin-top: 10px; text-align: center; font-size: 10px; color: #555; }
+    .footer a { color: #9147ff; text-decoration: none; }
+  </style>
+</head>
+<body>
+<div class="panel">
+  <div class="header">
+    <i class="ti ti-device-tv" style="font-size:20px;color:#9147ff"></i>
+    <div>
+      <div class="header-title">Anime List</div>
+      <div class="header-sub" id="username-display">Loading...</div>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('watching')" id="tab-watching">
+      Watching <span class="count" id="count-watching">0</span>
+    </button>
+    <button class="tab" onclick="switchTab('completed')" id="tab-completed">
+      Completed <span class="count" id="count-completed">0</span>
+    </button>
+    <button class="tab" onclick="switchTab('plan')" id="tab-plan">
+      Plan to watch <span class="count" id="count-plan">0</span>
+    </button>
+  </div>
+
+  <div id="list-container">
+    <div class="loading"><span class="spinner"></span>Loading...</div>
+  </div>
+
+  <div class="footer">
+    Powered by <a href="https://myanimelist.net" target="_blank">MyAnimeList</a>
+  </div>
+</div>
+
+<script>
+  var MAL_CLIENT_ID = '5d969505224e4cfc789d4f064c96fec8';
+  var MAL_USERNAME = 'NerdIdeias';
+  var PROXY = 'https://corsproxy.io/?';
+
+  var allData = { watching: [], completed: [], plan: [] };
+  var currentTab = 'watching';
+
+  function switchTab(tab) {
+    currentTab = tab;
+    document.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
+    document.getElementById('tab-' + tab).classList.add('active');
+    renderList();
+  }
+
+  function renderList() {
+    var container = document.getElementById('list-container');
+    var items = allData[currentTab];
+    if (!items || items.length === 0) {
+      var labels = { watching: 'currently watching', completed: 'completed', plan: 'planning to watch' };
+      container.innerHTML = '<div class="empty"><i class="ti ti-mood-empty"></i>Nothing ' + labels[currentTab] + ' yet.</div>';
+      return;
+    }
+    var html = '<div class="list">';
+    for (var i = 0; i < items.length; i++) {
+      var a = items[i];
+      var node = a.node;
+      var status = a.list_status;
+      var total = node.num_episodes || '?';
+      var watched = status.num_episodes_watched || 0;
+      var pct = (total && total !== '?') ? Math.round((watched / total) * 100) : 0;
+      var img = node.main_picture ? node.main_picture.medium : null;
+      var score = status.score;
+      html += '<div class="card">';
+      if (img) {
+        html += '<img class="cover" src="' + img + '" alt="" loading="lazy">';
+      } else {
+        html += '<div class="cover-placeholder"><i class="ti ti-photo" style="font-size:16px"></i></div>';
+      }
+      html += '<div class="info">';
+      html += '<div class="title">' + node.title + '</div>';
+      html += '<div class="meta">';
+      if (score && score > 0) {
+        html += '<span class="score"><i class="ti ti-star-filled" style="font-size:11px"></i> ' + score.toFixed(1) + '</span>';
+      } else {
+        html += '<span style="color:#555">Not rated</span>';
+      }
+      if (currentTab === 'watching') {
+        html += '<span class="eps">' + watched + '/' + total + ' eps</span>';
+      } else {
+        html += '<span class="eps">' + (total !== '?' ? total + ' eps' : '') + '</span>';
+      }
+      html += '</div>';
+      if (currentTab === 'watching') {
+        html += '<div class="progress-bar"><div class="progress-fill" style="width:' + pct + '%"></div></div>';
+      }
+      html += '</div></div>';
+    }
+    html += '</div>';
+    container.innerHTML = html;
+  }
+
+  function delay(ms) {
+    return new Promise(function(resolve) { setTimeout(resolve, ms); });
+  }
+
+  async function loadAll(username, status) {
+    var all = [];
+    var offset = 0;
+    while (true) {
+      var malUrl = 'https://api.myanimelist.net/v2/users/' + encodeURIComponent(username) + '/animelist?status=' + status + '&limit=100&offset=' + offset + '&fields=list_status,num_episodes,main_picture';
+      var url = PROXY + encodeURIComponent(malUrl);
+      var res = await fetch(url, {
+        headers: { 'X-MAL-CLIENT-ID': MAL_CLIENT_ID }
+      });
+      if (!res.ok) throw new Error('Failed to load list (error ' + res.status + ')');
+      var data = await res.json();
+      if (!data.data || data.data.length === 0) break;
+      all = all.concat(data.data);
+      if (!data.paging || !data.paging.next) break;
+      offset += 100;
+      await delay(300);
+    }
+    return all;
+  }
+
+  async function loadList(username) {
+    document.getElementById('username-display').textContent = '@' + username;
+    document.getElementById('list-container').innerHTML = '<div class="loading"><span class="spinner"></span>Loading anime list...</div>';
+    document.getElementById('count-watching').textContent = '...';
+    document.getElementById('count-completed').textContent = '...';
+    document.getElementById('count-plan').textContent = '...';
+    try {
+      var watching = await loadAll(username, 'watching');
+      var completed = await loadAll(username, 'completed');
+      var plan = await loadAll(username, 'plan_to_watch');
+      allData = { watching: watching, completed: completed, plan: plan };
+      document.getElementById('count-watching').textContent = watching.length;
+      document.getElementById('count-completed').textContent = completed.length;
+      document.getElementById('count-plan').textContent = plan.length;
+      renderList();
+    } catch(e) {
+      document.getElementById('list-container').innerHTML = '<div class="error"><i class="ti ti-alert-circle" style="vertical-align:-2px;margin-right:4px"></i>' + e.message + '</div>';
+      document.getElementById('count-watching').textContent = '0';
+      document.getElementById('count-completed').textContent = '0';
+      document.getElementById('count-plan').textContent = '0';
+    }
+  }
+
+  loadList(MAL_USERNAME);
+</script>
+</body>
+</html>

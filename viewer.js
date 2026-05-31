@@ -78,33 +78,36 @@ function loadList(username) {
     });
 }
 
-// Read username from Twitch config (set by broadcaster in config.html)
 function checkConfig() {
-  var cfg = window.Twitch.ext.configuration.broadcaster;
-  if (cfg && cfg.content) {
-    try {
-      var parsed = JSON.parse(cfg.content);
-      if (parsed.malUsername) {
-        loadList(parsed.malUsername);
-        return;
+  if (window.Twitch && window.Twitch.ext) {
+    window.Twitch.ext.configuration.onChanged(function() {
+      var cfg = window.Twitch.ext.configuration.broadcaster;
+      if (cfg && cfg.content) {
+        try {
+          var parsed = JSON.parse(cfg.content);
+          if (parsed.malUsername) { loadList(parsed.malUsername); return; }
+        } catch(e) {}
       }
-    } catch(e) {}
+      showNotConfigured();
+    });
+    window.Twitch.ext.onAuthorized(function() {
+      var cfg = window.Twitch.ext.configuration.broadcaster;
+      if (cfg && cfg.content) {
+        try {
+          var parsed = JSON.parse(cfg.content);
+          if (parsed.malUsername) { loadList(parsed.malUsername); return; }
+        } catch(e) {}
+      }
+      showNotConfigured();
+    });
+  } else {
+    setTimeout(checkConfig, 200);
   }
+}
+
+function showNotConfigured() {
   document.getElementById('username-display').textContent = 'Not configured';
   document.getElementById('list-container').innerHTML = '<div class="empty"><span class="empty-icon">&#128250;</span>Streamer hasn\'t set up their MAL username yet.</div>';
 }
 
-function initTwitch() {
-  if (window.Twitch && window.Twitch.ext) {
-    window.Twitch.ext.configuration.onChanged(function() { checkConfig(); });
-    window.Twitch.ext.onAuthorized(function() {
-      checkConfig();
-      setTimeout(function() { checkConfig(); }, 1000);
-      setTimeout(function() { checkConfig(); }, 3000);
-    });
-  } else {
-    setTimeout(initTwitch, 200);
-  }
-}
-
-initTwitch();
+checkConfig();

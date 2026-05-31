@@ -1,4 +1,4 @@
-var DATA_URL = 'https://sukoshi91-source.github.io/twitch-anime-panel/anime-data.json';
+var PROXY_URL = 'https://mal-proxy-topaz.vercel.app/api/mal';
 var allData = { watching: [], completed: [], plan: [] };
 var currentTab = 'watching';
 
@@ -46,20 +46,25 @@ function renderList() {
   container.innerHTML = html;
 }
 
-function loadData() {
+function loadList(username) {
+  document.getElementById('username-display').textContent = '@' + username;
   document.getElementById('list-container').innerHTML = '<div class="loading"><span class="spinner"></span>Loading anime list...</div>';
-  fetch(DATA_URL)
+  document.getElementById('count-watching').textContent = '...';
+  document.getElementById('count-completed').textContent = '...';
+  document.getElementById('count-plan').textContent = '...';
+
+  fetch(PROXY_URL + '?username=' + encodeURIComponent(username))
     .then(function(res) {
-      if (!res.ok) throw new Error('Could not load anime data.');
+      if (!res.ok) throw new Error('Failed to load list.');
       return res.json();
     })
     .then(function(data) {
+      if (data.error) throw new Error(data.error);
       allData = {
         watching: data.watching || [],
         completed: data.completed || [],
         plan: data.plan || []
       };
-      document.getElementById('username-display').textContent = 'NerdIdeias';
       document.getElementById('count-watching').textContent = allData.watching.length;
       document.getElementById('count-completed').textContent = allData.completed.length;
       document.getElementById('count-plan').textContent = allData.plan.length;
@@ -67,7 +72,24 @@ function loadData() {
     })
     .catch(function(e) {
       document.getElementById('list-container').innerHTML = '<div class="error">&#9888; ' + e.message + '</div>';
+      document.getElementById('count-watching').textContent = '0';
+      document.getElementById('count-completed').textContent = '0';
+      document.getElementById('count-plan').textContent = '0';
     });
 }
 
-loadData();
+// Read username from Twitch config (set by broadcaster in config.html)
+window.Twitch.ext.configuration.onChanged(function() {
+  var cfg = window.Twitch.ext.configuration.broadcaster;
+  if (cfg && cfg.content) {
+    try {
+      var parsed = JSON.parse(cfg.content);
+      if (parsed.malUsername) {
+        loadList(parsed.malUsername);
+        return;
+      }
+    } catch(e) {}
+  }
+  document.getElementById('username-display').textContent = 'Not configured';
+  document.getElementById('list-container').innerHTML = '<div class="empty"><span class="empty-icon">&#128250;</span>Streamer hasn\'t set up their MAL username yet.</div>';
+});

@@ -79,7 +79,7 @@ function loadList(username) {
 }
 
 // Read username from Twitch config (set by broadcaster in config.html)
-window.Twitch.ext.configuration.onChanged(function() {
+function checkConfig() {
   var cfg = window.Twitch.ext.configuration.broadcaster;
   if (cfg && cfg.content) {
     try {
@@ -92,4 +92,8 @@ window.Twitch.ext.configuration.onChanged(function() {
   }
   document.getElementById('username-display').textContent = 'Not configured';
   document.getElementById('list-container').innerHTML = '<div class="empty"><span class="empty-icon">&#128250;</span>Streamer hasn\'t set up their MAL username yet.</div>';
+}
+
+window.Twitch.ext.configuration.onChanged(function() { checkConfig(); });
+window.Twitch.ext.onAuthorized(function() { checkConfig();
 });

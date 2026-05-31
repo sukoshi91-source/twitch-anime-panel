@@ -22,7 +22,7 @@ function renderList() {
       watching: 'currently watching',
       completed: 'completed',
       plan: 'planning to watch',
-      favourites: 'favourites yet — rate an anime 10/10!'
+      favourites: 'favourites yet — rate some anime!'
     };
     container.innerHTML = '<div class="empty"><span class="empty-icon">&#127800;</span>Nothing ' + labels[currentTab] + '</div>';
     return;
@@ -68,8 +68,10 @@ function loadList(username) {
     .then(function(data) {
       if (data.error) throw new Error(data.error);
       var favourites = data.watching.concat(data.completed).filter(function(a) {
-        return a.list_status.score === 10;
-      });
+        return a.list_status.score > 0;
+      }).sort(function(a, b) {
+        return b.list_status.score - a.list_status.score;
+      }).slice(0, 10);
       allData = {
         watching: data.watching || [],
         completed: data.completed || [],

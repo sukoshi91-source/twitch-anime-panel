@@ -94,6 +94,17 @@ function checkConfig() {
   document.getElementById('list-container').innerHTML = '<div class="empty"><span class="empty-icon">&#128250;</span>Streamer hasn\'t set up their MAL username yet.</div>';
 }
 
-window.Twitch.ext.configuration.onChanged(function() { checkConfig(); });
-window.Twitch.ext.onAuthorized(function() { checkConfig();
-});
+function initTwitch() {
+  if (window.Twitch && window.Twitch.ext) {
+    window.Twitch.ext.configuration.onChanged(function() { checkConfig(); });
+    window.Twitch.ext.onAuthorized(function() {
+      checkConfig();
+      setTimeout(function() { checkConfig(); }, 1000);
+      setTimeout(function() { checkConfig(); }, 3000);
+    });
+  } else {
+    setTimeout(initTwitch, 200);
+  }
+}
+
+initTwitch();

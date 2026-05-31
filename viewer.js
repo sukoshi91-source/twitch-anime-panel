@@ -1,10 +1,11 @@
 var PROXY_URL = 'https://mal-proxy-topaz.vercel.app/api/mal';
-var allData = { watching: [], completed: [], plan: [] };
+var allData = { watching: [], completed: [], plan: [], favourites: [] };
 var currentTab = 'watching';
 
 document.getElementById('tab-watching').addEventListener('click', function() { switchTab('watching'); });
 document.getElementById('tab-completed').addEventListener('click', function() { switchTab('completed'); });
 document.getElementById('tab-plan').addEventListener('click', function() { switchTab('plan'); });
+document.getElementById('tab-favourites').addEventListener('click', function() { switchTab('favourites'); });
 
 function switchTab(tab) {
   currentTab = tab;
@@ -17,8 +18,13 @@ function renderList() {
   var container = document.getElementById('list-container');
   var items = allData[currentTab];
   if (!items || items.length === 0) {
-    var labels = { watching: 'currently watching', completed: 'completed', plan: 'planning to watch' };
-    container.innerHTML = '<div class="empty"><span class="empty-icon">&#127800;</span>Nothing ' + labels[currentTab] + ' yet.</div>';
+    var labels = {
+      watching: 'currently watching',
+      completed: 'completed',
+      plan: 'planning to watch',
+      favourites: 'favourites yet — rate an anime 10/10!'
+    };
+    container.innerHTML = '<div class="empty"><span class="empty-icon">&#127800;</span>Nothing ' + labels[currentTab] + '</div>';
     return;
   }
   var html = '<div class="list">';
@@ -52,6 +58,7 @@ function loadList(username) {
   document.getElementById('count-watching').textContent = '...';
   document.getElementById('count-completed').textContent = '...';
   document.getElementById('count-plan').textContent = '...';
+  document.getElementById('count-favourites').textContent = '...';
 
   fetch(PROXY_URL + '?username=' + encodeURIComponent(username))
     .then(function(res) {
@@ -60,14 +67,19 @@ function loadList(username) {
     })
     .then(function(data) {
       if (data.error) throw new Error(data.error);
+      var favourites = data.watching.concat(data.completed).filter(function(a) {
+        return a.list_status.score === 10;
+      });
       allData = {
         watching: data.watching || [],
         completed: data.completed || [],
-        plan: data.plan || []
+        plan: data.plan || [],
+        favourites: favourites
       };
       document.getElementById('count-watching').textContent = allData.watching.length;
       document.getElementById('count-completed').textContent = allData.completed.length;
       document.getElementById('count-plan').textContent = allData.plan.length;
+      document.getElementById('count-favourites').textContent = favourites.length;
       renderList();
     })
     .catch(function(e) {
@@ -75,6 +87,7 @@ function loadList(username) {
       document.getElementById('count-watching').textContent = '0';
       document.getElementById('count-completed').textContent = '0';
       document.getElementById('count-plan').textContent = '0';
+      document.getElementById('count-favourites').textContent = '0';
     });
 }
 

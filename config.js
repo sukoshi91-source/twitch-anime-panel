@@ -1,17 +1,10 @@
 var PROXY_URL = 'https://mal-proxy-topaz.vercel.app/api/mal';
 
 // Pre-fill if already configured
-window.Twitch.ext.configuration.onChanged(function() {
-  var cfg = window.Twitch.ext.configuration.broadcaster;
-  if (cfg && cfg.content) {
-    try {
-      var parsed = JSON.parse(cfg.content);
-      if (parsed.malUsername) {
-        document.getElementById('mal-input').value = parsed.malUsername;
-      }
-    } catch(e) {}
-  }
-});
+var saved = localStorage.getItem('mal_username');
+if (saved) {
+  document.getElementById('mal-input').value = saved;
+}
 
 document.getElementById('save-btn').addEventListener('click', function() {
   saveConfig();
@@ -44,7 +37,7 @@ function saveConfig() {
     .then(function(data) {
       if (data.error) throw new Error(data.error);
       localStorage.setItem('mal_username', username);
-      status.textContent = '✓ Saved! Viewers will now see your anime list.';
+      status.textContent = 'Saved! Viewers will now see your anime list.';
       status.className = 'status ok';
     })
     .catch(function(e) {

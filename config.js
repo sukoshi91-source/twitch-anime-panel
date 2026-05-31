@@ -43,7 +43,7 @@ function saveConfig() {
     })
     .then(function(data) {
       if (data.error) throw new Error(data.error);
-      window.Twitch.ext.configuration.set('broadcaster', '1', JSON.stringify({ malUsername: username }));
+      localStorage.setItem('mal_username', username);
       status.textContent = '✓ Saved! Viewers will now see your anime list.';
       status.className = 'status ok';
     })

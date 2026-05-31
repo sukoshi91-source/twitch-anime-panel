@@ -78,36 +78,18 @@ function loadList(username) {
     });
 }
 
-function checkConfig() {
-  if (window.Twitch && window.Twitch.ext) {
-    window.Twitch.ext.configuration.onChanged(function() {
-      var cfg = window.Twitch.ext.configuration.broadcaster;
-      if (cfg && cfg.content) {
-        try {
-          var parsed = JSON.parse(cfg.content);
-          if (parsed.malUsername) { loadList(parsed.malUsername); return; }
-        } catch(e) {}
-      }
-      showNotConfigured();
-    });
-    window.Twitch.ext.onAuthorized(function() {
-      var cfg = window.Twitch.ext.configuration.broadcaster;
-      if (cfg && cfg.content) {
-        try {
-          var parsed = JSON.parse(cfg.content);
-          if (parsed.malUsername) { loadList(parsed.malUsername); return; }
-        } catch(e) {}
-      }
-      showNotConfigured();
-    });
-  } else {
-    setTimeout(checkConfig, 200);
-  }
-}
-
 function showNotConfigured() {
   document.getElementById('username-display').textContent = 'Not configured';
   document.getElementById('list-container').innerHTML = '<div class="empty"><span class="empty-icon">&#128250;</span>Streamer hasn\'t set up their MAL username yet.</div>';
+}
+
+function checkConfig() {
+  var username = localStorage.getItem('mal_username');
+  if (username) {
+    loadList(username);
+  } else {
+    showNotConfigured();
+  }
 }
 
 checkConfig();
